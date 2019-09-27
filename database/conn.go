@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	crypt "github.com/wolvex/go/crypto"
-	"github.com/wolvex/go/crypto/parser"
+	"github.com/wolvex/go/parser"
 	//load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	//_ "github.com/lib/pq"
