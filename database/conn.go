@@ -48,7 +48,7 @@ func New(fn string) (*DbConnection, error) {
 	if c.URL == "" {
 		key := strings.Repeat(strings.ToUpper(c.Username), 2)
 		if password, err := crypt.TripleDesDecrypt(c.Password, []byte(key), crypt.PKCS5UnPadding); err != nil {
-			if encpass, e := crypt.TripleDesEncrypt(c.Password, []byte(key), crypt.PKCS5Padding); e == nil {
+			if _, e := crypt.TripleDesEncrypt(c.Password, []byte(key), crypt.PKCS5Padding); e == nil {
 				//log.Debugf("Decryption error, try %s instead\n", encpass)
 			}
 			return nil, err
