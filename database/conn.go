@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	crypt "../encryption"
-	log "../logging"
-	"../parser"
+	crypt "github.com/wolvex/go/crypto"
+	"github.com/wolvex/go/crypto/parser"
 	//load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	//_ "github.com/lib/pq"
@@ -50,7 +49,7 @@ func New(fn string) (*DbConnection, error) {
 		key := strings.Repeat(strings.ToUpper(c.Username), 2)
 		if password, err := crypt.TripleDesDecrypt(c.Password, []byte(key), crypt.PKCS5UnPadding); err != nil {
 			if encpass, e := crypt.TripleDesEncrypt(c.Password, []byte(key), crypt.PKCS5Padding); e == nil {
-				log.Debugf("Decryption error, try %s instead\n", encpass)
+				//log.Debugf("Decryption error, try %s instead\n", encpass)
 			}
 			return nil, err
 		} else {
