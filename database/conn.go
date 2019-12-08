@@ -3,10 +3,9 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 
-	crypt "github.com/wolvex/go/crypto"
 	"github.com/wolvex/go/parser"
+
 	//load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	//_ "github.com/lib/pq"
@@ -46,15 +45,15 @@ func New(fn string) (*DbConnection, error) {
 	}
 
 	if c.URL == "" {
-		key := strings.Repeat(strings.ToUpper(c.Username), 2)
-		if password, err := crypt.TripleDesDecrypt(c.Password, []byte(key), crypt.PKCS5UnPadding); err != nil {
-			if _, e := crypt.TripleDesEncrypt(c.Password, []byte(key), crypt.PKCS5Padding); e == nil {
-				//log.Debugf("Decryption error, try %s instead\n", encpass)
-			}
-			return nil, err
-		} else {
-			c.URL = fmt.Sprintf("%s:%s@(%s)/%s", c.Username, password, c.Host, c.Schema)
-		}
+		//key := strings.Repeat(strings.ToUpper(c.Username), 2)
+		//if password, err := crypt.TripleDesDecrypt(c.Password, []byte(key), crypt.PKCS5UnPadding); err != nil {
+		//	if _, e := crypt.TripleDesEncrypt(c.Password, []byte(key), crypt.PKCS5Padding); e == nil {
+		//		//log.Debugf("Decryption error, try %s instead\n", encpass)
+		//	}
+		//	return nil, err
+		//} else {
+		//	c.Password = password
+		//}
 	}
 
 	return &c, nil
@@ -62,6 +61,12 @@ func New(fn string) (*DbConnection, error) {
 
 // OpenConnection prepares dbConnection for future connection to database
 func (c DbConnection) Open() (*sql.DB, error) {
+	if c.Username != "" && c.Password != "" && c.Host != "" && c.Schema != "" {
+		c.URL = fmt.Sprintf("%s:%s@(%s)/%s", c.Username, c.Password, c.Host, c.Schema)
+	}
+
+	//fmt.Println(c.URL)
+
 	c.Close()
 
 	// Open database connection
@@ -172,6 +177,8 @@ func (c DbConnection) Query(sqlStringName string, args ...interface{}) (*sql.Row
 		strSQL = sqlStringName
 	}
 
+	//fmt.Println(strSQL)
+
 	rows, err := c.Db.Query(strSQL, args...)
 	if err != nil {
 		return nil, err
@@ -198,7 +205,7 @@ func (c DbConnection) Exec(sqlStringName string, args ...interface{}) (int64, er
 	// Execute the query
 	res, err := c.Db.Exec(strSQL, args...)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return 0, err //panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
 	rows, err := res.RowsAffected()
@@ -226,7 +233,8 @@ func (c DbConnection) InsertGetLastId(sqlStringName string, args ...interface{})
 	// Execute the query
 	res, err := c.Db.Exec(strSQL, args...)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		//panic(err.Error()) // proper error handling instead of panic in your app
+		return 0, err
 	}
 
 	rows, err := res.LastInsertId()
