@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/wolvex/go/parser"
 
@@ -34,6 +35,7 @@ type DbConnection struct {
 	Schema   string            `yaml:"Schema"`
 	SQL      map[string]string `yaml:"SQLCommand"`
 	Db       *sql.DB
+	Tx       *sql.Tx
 }
 
 //var c.Db *sql.DB
@@ -59,6 +61,23 @@ func New(fn string) (*DbConnection, error) {
 	return &c, nil
 }
 
+func (c DbConnection) Begin() error {
+	var e error
+	c.Tx, e = c.Db.Begin()
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+func (c DbConnection) Commit() error {
+	return c.Tx.Commit()
+}
+
+func (c DbConnection) Rollback() error {
+	return c.Tx.Rollback()
+}
+
 // OpenConnection prepares dbConnection for future connection to database
 func (c DbConnection) Open() (*sql.DB, error) {
 	if c.Username != "" && c.Password != "" && c.Host != "" && c.Schema != "" {
@@ -78,6 +97,9 @@ func (c DbConnection) Open() (*sql.DB, error) {
 	}
 
 	dbConn.SetMaxOpenConns(100)
+
+	dbConn.SetMaxIdleConns(20)
+	dbConn.SetConnMaxLifetime(30 * time.Minute)
 
 	err = dbConn.Ping()
 	if err != nil {
@@ -186,6 +208,30 @@ func (c DbConnection) Query(sqlStringName string, args ...interface{}) (*sql.Row
 	return rows, nil
 }
 
+func (c DbConnection) QueryTx(sqlStringName string, args ...interface{}) (*sql.Rows, error) {
+	// if no dbConnection, return
+	//
+	if c.Tx == nil {
+		return nil, fmt.Errorf("Transaction needs to be initiated first.")
+	}
+
+	var strSQL string
+	var found bool
+
+	//if strSQL, found = sqlCommandMap[sqlStringName]; !found {
+	if strSQL, found = c.SQL[sqlStringName]; !found {
+		strSQL = sqlStringName
+	}
+
+	//fmt.Println(strSQL)
+
+	rows, err := c.Tx.Query(strSQL, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
 //Exec executes UPDATE/INSERT/DELETE statements and returns rows affected
 func (c DbConnection) Exec(sqlStringName string, args ...interface{}) (int64, error) {
 	// if no dbConnection, return
@@ -204,6 +250,34 @@ func (c DbConnection) Exec(sqlStringName string, args ...interface{}) (int64, er
 
 	// Execute the query
 	res, err := c.Db.Exec(strSQL, args...)
+	if err != nil {
+		return 0, err //panic(err.Error()) // proper error handling instead of panic in your app
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return rows, nil
+}
+
+func (c DbConnection) ExecTx(sqlStringName string, args ...interface{}) (int64, error) {
+	// if no dbConnection, return
+	//
+	if c.Tx == nil {
+		return 0, fmt.Errorf("Please Begin() transaction first")
+	}
+
+	var strSQL string
+	var found bool
+
+	//if strSQL, found = sqlCommandMap[sqlStringName]; !found {
+	if strSQL, found = c.SQL[sqlStringName]; !found {
+		strSQL = sqlStringName
+	}
+
+	// Execute the query
+	res, err := c.Tx.Exec(strSQL, args...)
 	if err != nil {
 		return 0, err //panic(err.Error()) // proper error handling instead of panic in your app
 	}
