@@ -91,3 +91,8 @@ func (e *AppError) Dump() string {
 	}
 	return buff.String()
 }
+
+// Error makes it compatible with go built-in `error` interface.
+func (e *AppError) Error() string {
+	return e.Dump()
+}
