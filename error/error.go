@@ -25,6 +25,18 @@ type AppError struct {
 //The resulting struct can then be used to enrich information, e.g. adding remarks and contexts (key-value)
 func Error(err error, errCode int) *AppError {
 	e := &AppError{}
+	return e.Parse(err, errCode)
+}
+
+//Errorc method will instantiate new struct of AppError and populates ErrCode (int) value
+//The resulting struct can then be used to enrich information, e.g. adding remarks and contexts (key-value)
+func Errorc(errCode int) *AppError {
+	e := &AppError{}
+	return e.Parse(nil, errCode)
+}
+
+//Parse ...
+func (e *AppError) Parse(err error, errCode int) *AppError {
 	e.Original = err
 	e.ErrCode = errCode
 	if _, file, line, ok := runtime.Caller(1); ok {
@@ -35,29 +47,24 @@ func Error(err error, errCode int) *AppError {
 	return e
 }
 
-//Errorc method will instantiate new struct of AppError and populates ErrCode (int) value
-//The resulting struct can then be used to enrich information, e.g. adding remarks and contexts (key-value)
-func Errorc(errCode int) *AppError {
-	e := &AppError{}
-	e.ErrCode = errCode
-	if _, file, line, ok := runtime.Caller(1); ok {
-		f := strings.Split(file, "/")
-		e.File = f[len(f)-1]
-		e.Line = line
-	}
-	return e
-}
-
+//Rem ...
 func (e *AppError) Rem(msg string, a ...interface{}) *AppError {
 	e.Remark = fmt.Sprintf(msg, a...)
 	return e
 }
 
+//SetString ...
 func (e *AppError) SetString(key string, val string) *AppError {
 	e.Context[key] = val
 	return e
 }
 
+//Set ...
+func (e *AppError) Set(key string, val string) *AppError {
+	return e.SetString(key, val)
+}
+
+//Dump ...
 func (e *AppError) Dump() string {
 	var buff bytes.Buffer
 
