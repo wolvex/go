@@ -101,5 +101,8 @@ func (e *AppError) Dump() string {
 
 // Error makes it compatible with go built-in `error` interface.
 func (e *AppError) Error() string {
+	if e == nil {
+		return ""
+	}
 	return e.Dump()
 }
