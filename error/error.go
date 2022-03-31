@@ -39,7 +39,7 @@ func Errorc(errCode int) *AppError {
 func (e *AppError) Parse(err error, errCode int) *AppError {
 	e.Original = err
 	e.ErrCode = errCode
-	if _, file, line, ok := runtime.Caller(1); ok {
+	if _, file, line, ok := runtime.Caller(2); ok {
 		f := strings.Split(file, "/")
 		e.File = f[len(f)-1]
 		e.Line = line
